@@ -77,7 +77,7 @@ char *sendRequest(int sock, char *message) {
 	
 	response = (char *) malloc(INIT_RESP);
 	n = recv(sock, response, INIT_RESP, 0);
-	response[n + INIT_RESP * extra_mem] = '\0';
+	response[n] = '\0';
 
 	if(n < 0) {
 		printf("Error reading from socket\n");
@@ -89,27 +89,28 @@ char *sendRequest(int sock, char *message) {
 	return response;
 }
 
-char *parseRequest(char *request) {
-	
-	int i, path_length, host_length;
-	char *path_start, *path_end, *host_start, *host_end, *request_type, *host;
+char *parseRequest(char *request, char *section) {
+	printf("Parsing request:\n");
+	printf("%s\n", request);
+			
+	int section_length = strlen(section);
+	char *start = strstr(request, section) + section_length + 2;
+	if(start == NULL) 
+		return "none";
+	char *end = strchr(start, '\n') - 1;
 
-	//Skip path
-	request = strchr(request, ' ') + 1;
-	path_start = request;
-	path_end = strchr(request, ' ');
-	path_length = path_end - path_start;
-
-	//Just get hostname
-	host_start = strchr(request, '\n') + 1;
-	host_start = strchr(host_start, ' ') + 1;
-	host_end = strchr(host_start, '\n') - 2;
-	host_length = host_end - host_start + 1;
-	printf("%d\n", host_length);
-	host = malloc(host_length + 1);
-	strncpy(host, host_start, host_length);
-	host[host_length] = '\0';
-	return host;
+	if(strcmp(section, "GET") == 0) {
+		start = strstr(request, section) + section_length + 1;
+		end = strchr(start, ' ') - 1;
+	}
+	int n_bytes = end - start;
+	printf("Section is %d bytes long\n", n_bytes);
+	char *value = malloc(n_bytes + 1);
+	printf("Copying into new string...");
+	strncpy(value, start, n_bytes);
+	value[n_bytes] = '\0';
+	printf("Copied value: \"%s\"\n", value);
+	return value;
 }
 
 char *getRequest(int sock, int *client_sock, struct sockaddr_in *client) {

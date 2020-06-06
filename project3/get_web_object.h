@@ -33,7 +33,7 @@ char *sendRequest(int sock, char *message);
 //Parses the filename and host information from an HTTP GET request
 //takes the request, and two pointers where the filename and host will be stored after parsing.
 //points to the char pointer that is created by malloc
-char *parseRequest(char *request);
+char *parseRequest(char *request, char *section);
 
 
 //Waits and listens for a request from the passed sock and then returns a pointer to the request
