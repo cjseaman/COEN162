@@ -62,6 +62,16 @@ int connectToServer(unsigned long *ip, int port) {
 		return sock;
 	}
 }
+char *removeLine(char *request, char *section) {
+	char *start, *end;
+	start = strstr(request, section);
+	if(start != NULL) {
+		end = strchr(start, '\n');
+		strcpy(start, end + 1);
+	}
+	return request;
+	
+}
 
 char *sendRequest(int sock, char *message) {
 	char c, *response;
@@ -78,6 +88,13 @@ char *sendRequest(int sock, char *message) {
 	response = (char *) malloc(INIT_RESP);
 	n = recv(sock, response, INIT_RESP, 0);
 	response[n] = '\0';
+	
+	response = removeLine(response, "If-Modified-Since");
+	response = removeLine(response, "Proxy-Connection");
+	response = removeLine(response, "Content-Length");
+	response = removeLine(response, "ETag");
+	response = removeLine(response, "Connection");
+	response = removeLine(response, "Cache-Control");
 
 	if(n < 0) {
 		printf("Error reading from socket\n");
@@ -88,6 +105,7 @@ char *sendRequest(int sock, char *message) {
 	
 	return response;
 }
+
 
 char *parseRequest(char *request, char *section) {
 	printf("Parsing request:\n");
@@ -101,7 +119,7 @@ char *parseRequest(char *request, char *section) {
 
 	if(strcmp(section, "GET") == 0) {
 		start = strstr(request, section) + section_length + 1;
-		end = strchr(start, ' ') - 1;
+		end = strchr(start, ' ');
 	}
 	int n_bytes = end - start;
 	printf("Section is %d bytes long\n", n_bytes);
@@ -114,7 +132,7 @@ char *parseRequest(char *request, char *section) {
 }
 
 char *getRequest(int sock, int *client_sock, struct sockaddr_in *client) {
-	char *response;
+	char *response, *start, *end;
 	int n, extra_mem = 0;
 	int clientLen = sizeof(struct sockaddr_in);
 
@@ -128,12 +146,19 @@ char *getRequest(int sock, int *client_sock, struct sockaddr_in *client) {
 	printf("Accepted\n");	
 	n = recv(*client_sock, response, INIT_RESP, 0);
 	response[n] = '\0';
-	printf("%d Bytes read\nResponse:\n%s\n", n, response);
 
 	if(strlen(response) <= 0) {
 		printf("Error reading from socket or no data read from socket\n");
 		return NULL;
 	}
+
+	response = removeLine(response, "If-Modified-Since");
+	response = removeLine(response, "Proxy-Connection");
+	response = removeLine(response, "Content-Length");
+	response = removeLine(response, "ETag");
+	response = removeLine(response, "Connection");
+	response = removeLine(response, "Cache-Control");
+	printf("%d Bytes read\nResponse:\n%s\n", n, response);
 
 	printf("\n\nRead Completed.\n");
 	
